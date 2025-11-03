@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Math Duel — Online PvP</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+	<style>
+		:root{
+			--bg:#0b1020;
+			--bg-2:#0e142b;
+			--text:#eef3ff;
+			--muted:#9aa6c7;
+			--glass:rgba(255,255,255,0.06);
+			--glass-2:rgba(255,255,255,0.10);
+			--glass-stroke:rgba(255,255,255,0.16);
+			--primary:#7c5cff;
+			--radius:16px;
+			--shadow:0 10px 30px rgba(0,0,0,0.35);
+			--win:#3ddc97;
+			--lose:#ff6b6b;
+		}
+		*{box-sizing:border-box}
+		html,body{height:100%}
+		body{
+			margin:0;
+			font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;
+			color:var(--text);
+			background: radial-gradient(1200px 800px at 50% -10%, #2b2f6a33, transparent 60%), linear-gradient(180deg, var(--bg), var(--bg-2));
+			display:flex;
+			align-items:flex-start;
+			justify-content:center;
+			visibility:hidden;
+		}
+		body[data-ready="true"]{ visibility:visible }
+
+		.container{ width:min(1000px, 94%); margin:28px auto; }
+
+		.header-line{ margin:12px 0 16px; border-bottom:1px solid rgba(255,255,255,0.08); }
+
+		.panel{
+			border-radius:var(--radius);
+			background:var(--glass);
+			border:1px solid var(--glass-stroke);
+			backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+			box-shadow: 0 8px 20px rgba(0,0,0,0.25) inset, 0 10px 24px rgba(0,0,0,0.15);
+			padding:16px;
+		}
+		.grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
+		@media (max-width:820px){ .grid2{ grid-template-columns: 1fr } }
+
+		.identity{
+			display:flex; align-items:center; justify-content:center; gap:14px; margin:10px 0 18px;
+		}
+		.avatar{
+			width:62px; height:62px; border-radius:14px; overflow:hidden;
+			background:#11183a; border:1px solid var(--glass-stroke); box-shadow:var(--shadow);
+			image-rendering:pixelated;
+		}
+		.avatar img{ width:100%; height:100%; object-fit:cover }
+		.username{
+			font-weight:800; font-size:20px; letter-spacing:0.2px;
+			background: linear-gradient(180deg, #ffffff, #cbd5ff);
+			-webkit-background-clip:text; background-clip:text; color:transparent;
+		}
+
+		.inputRow{ display:flex; gap:10px; }
+		input[type="text"], input[type="number"]{
+			flex:1; min-width:0;
+			padding:10px 12px; border-radius:10px; outline:none;
+			border:1px solid var(--glass-stroke); background:rgba(255,255,255,0.06);
+			color:var(--text); font-size:16px;
+		}
+		button{
+			padding:10px 14px; border-radius:10px; border:1px solid var(--glass-stroke);
+			background: linear-gradient(180deg, rgba(124,92,255,0.25), rgba(124,92,255,0.15));
+			color:#fff; font-weight:700; cursor:pointer;
+			transition: transform .05s ease, box-shadow .2s ease;
+			white-space:nowrap;
+		}
+		button:hover{ transform: translateY(-1px) }
+		button:disabled{ opacity:0.6; cursor:not-allowed }
+
+		.small{ font-size:12px; color:var(--muted); min-height:16px; }
+		.badges{ display:flex; gap:8px; flex-wrap:wrap; }
+		.badge{
+			padding:6px 10px; border-radius:999px; font-size:12px; color:#eaf0ff;
+			border:1px solid var(--glass-stroke); background:rgba(255,255,255,0.07);
+		}
+		.timer{
+			font-weight:800; font-variant-numeric:tabular-nums;
+			padding:6px 10px; border-radius:10px; border:1px solid var(--glass-stroke);
+			background: rgba(255,255,255,0.08);
+		}
+		.topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+
+		.qwrap{
+			background: var(--glass-2);
+			border:1px solid var(--glass-stroke);
+			border-radius:12px; padding:14px; margin-bottom:14px;
+			text-align:center;
+		}
+		.question{
+			font-weight:800; font-size:28px; letter-spacing:0.4px; margin:6px 0 6px;
+			min-height:36px;
+		}
+
+		.card{
+			background: var(--glass-2);
+			border:1px solid var(--glass-stroke);
+			border-radius:12px; padding:14px;
+			backdrop-filter: blur(10px);
+		}
+		.card h3{ margin:0 0 10px; font-size:14px; color:var(--muted) }
+
+		.row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+		.pill{ padding:6px 10px; border-radius:999px; border:1px solid var(--glass-stroke); background: rgba(255,255,255,0.08); font-variant-numeric:tabular-nums; }
+		.win{ color:var(--win); font-weight:800 }
+		.lose{ color:var(--lose); font-weight:800 }
+
+		.result{
+			text-align:center; padding:18px; border-radius:12px;
+			background:rgba(255,255,255,0.08); border:1px solid var(--glass-stroke);
+			margin-top:12px;
+		}
+		.big{ font-size:22px; font-weight:800; margin:8px 0 }
+		.center-note{ text-align:center; color:var(--muted); margin-top:10px; font-size:13px; }
+		.code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing:1px; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="identity" aria-label="Players">
+			<div class="avatar">
+				<img id="selfAvatar" alt="Your avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Tiger" />
+			</div>
+			<div class="username" id="selfName">@you</div>
+		</div>
+
+		<div class="header-line"></div>
+
+		<!-- Lobby -->
+		<div class="panel" id="lobby">
+			<h3 style="margin:0 0 12px; color:var(--muted)">Create or Join Room</h3>
+			<div class="grid2">
+				<div class="card">
+					<h3>Create Room</h3>
+					<div class="inputRow" style="margin-top:8px">
+						<input type="text" id="hostName" placeholder="Your name (host)" />
+						<button id="createBtn">Create</button>
+					</div>
+					<div class="small" id="createMsg"></div>
+				</div>
+				<div class="card">
+					<h3>Join Room</h3>
+					<div class="inputRow" style="margin-top:8px">
+						<input type="text" id="joinCode" placeholder="Room code (e.g. ABC123)" />
+						<input type="text" id="joinName" placeholder="Your name" />
+						<button id="joinBtn">Join</button>
+					</div>
+					<div class="small" id="joinMsg"></div>
+				</div>
+			</div>
+			<div class="center-note">Share the room code with the other player. Each plays on their device.</div>
+		</div>
+
+		<!-- Room -->
+		<div class="panel" id="room" style="display:none">
+			<div class="topbar">
+				<div class="badges">
+					<span class="badge">Room: <span class="code" id="roomCode">—</span></span>
+					<span class="badge" id="qProgress">Waiting</span>
+					<span class="badge" id="difficultyBadge"></span>
+				</div>
+				<div class="timer" id="timer">—</div>
+			</div>
+
+			<div class="grid2" style="margin-bottom:12px">
+				<div class="card">
+					<h3>Players</h3>
+					<div class="row" style="margin-top:6px">
+						<div class="small">Host</div>
+						<div class="small" id="hostTag">—</div>
+					</div>
+					<div id="playersList" class="small" style="margin-top:8px"></div>
+					<div style="margin-top:12px">
+						<button id="startBtn" disabled>Start Match</button>
+					</div>
+					<div class="small" id="roomMsg" style="margin-top:8px"></div>
+				</div>
+
+				<div class="card">
+					<h3>Your Panel</h3>
+					<div class="row" style="margin-bottom:8px">
+						<span class="small">Your Score</span>
+						<span class="pill" id="selfScore">0</span>
+					</div>
+					<div class="qwrap">
+						<div class="question" id="questionText"></div>
+						<div class="small" id="qHint"></div>
+					</div>
+					<div class="inputRow">
+						<input type="number" id="answerInput" inputmode="numeric" placeholder="Your answer" />
+						<button id="submitBtn">Submit</button>
+					</div>
+					<div class="small" id="feedback" style="margin-top:8px"></div>
+				</div>
+			</div>
+
+			<div class="result" id="result" style="display:none">
+				<div class="big" id="resultTitle">Results</div>
+				<div style="display:flex; gap:10px; justify-content:center; margin:8px 0 2px;">
+					<span class="pill">You: <span id="finalSelf">0</span></span>
+					<span class="pill">Opponent: <span id="finalOpp">0</span></span>
+					<span class="pill">Correct total: <span id="finalCorrect">0</span>/10</span>
+				</div>
+				<div class="small" id="resultNote" style="margin-top:6px"></div>
+				<div style="margin-top:12px; display:flex; gap:10px; justify-content:center;">
+					<button id="playAgain">Play Again</button>
+					<button id="leaveRoom">Leave Room</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Firebase -->
+	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+	<script>
+		// Prevent flashes
+		document.addEventListener('DOMContentLoaded', () => {
+			document.body.setAttribute('data-ready','true');
+		});
+	</script>
+
+	<script>
+		// Replace with your Firebase config
+		const firebaseConfig = {
+			apiKey: "YOUR_API_KEY",
+			authDomain: "YOUR_PROJECT.firebaseapp.com",
+			databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+			projectId: "YOUR_PROJECT",
+			storageBucket: "YOUR_PROJECT.appspot.com",
+			messagingSenderId: "SENDER_ID",
+			appId: "APP_ID"
+		};
+		firebase.initializeApp(firebaseConfig);
+		const db = firebase.database();
+
+		// UI refs
+		const lobby = document.getElementById('lobby');
+		const roomView = document.getElementById('room');
+		const createBtn = document.getElementById('createBtn');
+		const joinBtn = document.getElementById('joinBtn');
+		const hostNameInput = document.getElementById('hostName');
+		const joinCodeInput = document.getElementById('joinCode');
+		const joinNameInput = document.getElementById('joinName');
+		const createMsg = document.getElementById('createMsg');
+		const joinMsg = document.getElementById('joinMsg');
+
+		const roomCodeEl = document.getElementById('roomCode');
+		const hostTag = document.getElementById('hostTag');
+		const playersList = document.getElementById('playersList');
+		const startBtn = document.getElementById('startBtn');
+		const roomMsg = document.getElementById('roomMsg');
+
+		const questionEl = document.getElementById('questionText');
+		const qHint = document.getElementById('qHint');
+		const qProgressEl = document.getElementById('qProgress');
+		const difficultyBadge = document.getElementById('difficultyBadge');
+		const timerEl = document.getElementById('timer');
+
+		const answerInput = document.getElementById('answerInput');
+		const submitBtn = document.getElementById('submitBtn');
+		const feedbackEl = document.getElementById('feedback');
+		const selfScoreEl = document.getElementById('selfScore');
+
+		const resultBox = document.getElementById('result');
+		const resultTitle = document.getElementById('resultTitle');
+		const resultNote = document.getElementById('resultNote');
+		const finalSelf = document.getElementById('finalSelf');
+		const finalOpp = document.getElementById('finalOpp');
+		const finalCorrect = document.getElementById('finalCorrect');
+		const playAgainBtn = document.getElementById('playAgain');
+		const leaveRoomBtn = document.getElementById('leaveRoom');
+
+		const selfNameEl = document.getElementById('selfName');
+		const selfAvatar = document.getElementById('selfAvatar');
+
+		// Local identity
+		const seeds = ['Tiger','Fox','Panda','Penguin','Cat','Dog','Koala','Lion','Bear','Rabbit'];
+		function rand(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+		function rngInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min }
+		selfAvatar.src = 'https://api.dicebear.com/7.x/pixel-art/svg?seed=' + rand(seeds);
+
+		let playerId = localStorage.getItem('md_playerId') || (Math.random().toString(36).slice(2,8)+Date.now().toString(36)).slice(0,10);
+		localStorage.setItem('md_playerId', playerId);
+
+		let roomCode = null;
+		let unsub = null;
+		let isHost = false;
+		let myName = '@you';
+		let tickTimer = null;
+
+		const TOTAL_QUESTIONS = 10;
+		const PER_Q_MS = 10000;
+
+		// Question generation (host)
+		function nextDifficulty(i){ return Math.min(5, 1 + Math.floor(i/2)); }
+		function makeEasyOperands(level){
+			const ranges = {
+				1: { a:[1,9], b:[1,9] },
+				2: { a:[2,12], b:[1,12] },
+				3: { a:[3,15], b:[2,12] },
+				4: { a:[5,20], b:[2,15] },
+				5: { a:[6,25], b:[3,18] }
+			};
+			const r = ranges[level];
+			return [rngInt(r.a[0], r.a[1]), rngInt(r.b[0], r.b[1])];
+		}
+		function generateQ(level){
+			const ops = ['+','-','×','÷'];
+			const op = ops[rngInt(0, ops.length-1)];
+			let a,b,answer,text;
+			if(op === '+'){ [a,b]=makeEasyOperands(level); answer=a+b; text=`${a} + ${b}`; }
+			else if(op==='-'){ [a,b]=makeEasyOperands(level); if(b>a) [a,b]=[b,a]; answer=a-b; text=`${a} - ${b}`; }
+			else if(op==='×'){ [a,b]=makeEasyOperands(level); if(level<=2){ a=rngInt(2,9); b=rngInt(2,9); } answer=a*b; text=`${a} × ${b}`; }
+			else { const base=level<=2?rngInt(2,9):rngInt(2,12); const mul=level<=3?rngInt(2,9):rngInt(2,12); a=base*mul; b=mul; answer=base; text=`${a} ÷ ${b}`; }
+			return { t:text, a:answer, d:level };
+		}
+		function generateSet(){
+			const arr = [];
+			for(let i=0;i<TOTAL_QUESTIONS;i++){ arr.push(generateQ(nextDifficulty(i))); }
+			return arr;
+		}
+
+		// Room helpers
+		function codeGen(){
+			const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+			let c=''; for(let i=0;i<6;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+			return c;
+		}
+		function fmt(s){ return (''+s).trim(); }
+
+		// Create room
+		createBtn.addEventListener('click', async () => {
+			const name = fmt(hostNameInput.value)||'Host';
+			createMsg.textContent = 'Creating...';
+			const code = codeGen();
+			const roomRef = db.ref('rooms/'+code);
+			const snap = await roomRef.get();
+			if(snap.exists()){ createMsg.textContent='Collision, try again.'; return; }
+			const questions = generateSet();
+			const now = Date.now();
+			const init = {
+				code, createdAt: now,
+				hostId: playerId,
+				status: 'lobby', // lobby | running | finished
+				currentIndex: -1,
+				perQuestionMs: PER_Q_MS,
+				questionStartAt: 0,
+				questions, // [{t, a, d}]
+				players: {
+					[playerId]: { name, score:0, joinedAt: now }
+				},
+				answers:{} // answers[questionIndex][playerId] = {v, correct, at}
+			};
+			await roomRef.set(init);
+			isHost = true; myName = name; selfNameEl.textContent = name;
+			roomCode = code; enterRoom(code);
+			createMsg.textContent = '';
+		});
+
+		// Join room
+		joinBtn.addEventListener('click', async () => {
+			const code = fmt(joinCodeInput.value).toUpperCase();
+			const name = fmt(joinNameInput.value)||'Player';
+			joinMsg.textContent = 'Joining...';
+			if(!code){ joinMsg.textContent='Enter code.'; return; }
+			const roomRef = db.ref('rooms/'+code);
+			const snap = await roomRef.get();
+			if(!snap.exists()){ joinMsg.textContent='Room not found.'; return; }
+			const room = snap.val();
+			if(room.status !== 'lobby' && room.status !== 'running'){ joinMsg.textContent='Room unavailable.'; return; }
+			await db.ref(`rooms/${code}/players/${playerId}`).set({ name, score:0, joinedAt: Date.now() });
+			isHost = (room.hostId === playerId);
+			myName = name; selfNameEl.textContent = name;
+			roomCode = code; enterRoom(code);
+			joinMsg.textContent = '';
+		});
+
+		// Enter room and subscribe
+		function enterRoom(code){
+			lobby.style.display='none';
+			roomView.style.display='';
+			roomCodeEl.textContent = code;
+			answerInput.value=''; feedbackEl.textContent='';
+			selfScoreEl.textContent='0';
+			questionEl.textContent=''; qHint.textContent='';
+			qProgressEl.textContent='Waiting';
+			difficultyBadge.textContent='';
+			timerEl.textContent='—';
+			resultBox.style.display='none';
+
+			if(unsub) unsub.off();
+			const ref = db.ref('rooms/'+code);
+			ref.on('value', snap => {
+				const data = snap.val();
+				if(!data){ roomMsg.textContent='Room closed.'; return; }
+				renderRoom(data);
+			});
+			unsub = ref;
+		}
+
+		// Render and logic
+		function renderRoom(room){
+			hostTag.textContent = room.hostId ? (room.players && room.players[room.hostId]?.name || '—') : '—';
+			const ids = Object.keys(room.players||{});
+			playersList.innerHTML = ids.map(id => {
+				const p = room.players[id];
+				return `<div class="row"><span>${p.name}</span><span class="pill">${p.score||0}</span></div>`;
+			}).join('') || 'No players yet.';
+
+			const ready2 = ids.length >= 2;
+			startBtn.disabled = !(isHost && room.status==='lobby' && ready2);
+			roomMsg.textContent = isHost ? (ready2 ? 'Start when both are ready.' : 'Waiting for another player...') : (room.status==='lobby'?'Waiting for host...':'');
+
+			if(room.status === 'running'){
+				const i = room.currentIndex;
+				const q = room.questions[i];
+				qProgressEl.textContent = `Question ${i+1} / ${TOTAL_QUESTIONS}`;
+				difficultyBadge.textContent = `Difficulty: ${q.d}`;
+				questionEl.textContent = q.t;
+				qHint.textContent = 'Answer before time runs out.';
+				startTick(room);
+
+				// If both answered, host advances
+				const ansMap = (room.answers && room.answers[i]) || {};
+				const answeredCount = Object.keys(ansMap).length;
+				if(isHost && answeredCount >= Math.min(2, Object.keys(room.players||{}).length)){
+					scheduleAdvance(room, 400);
+				}
+				// Show my score
+				const me = room.players[playerId];
+				if(me) selfScoreEl.textContent = me.score||0;
+			}
+
+			if(room.status === 'finished'){
+				stopTick();
+				showResults(room);
+			}
+		}
+
+		function startTick(room){
+			stopTick();
+			tickTimer = setInterval(() => {
+				const endAt = (room.questionStartAt||0) + (room.perQuestionMs||PER_Q_MS);
+				const left = Math.max(0, endAt - Date.now());
+				timerEl.textContent = `00:${String(Math.ceil(left/1000)).padStart(2,'0')}`;
+				if(left <= 0){
+					stopTick();
+					if(isHost){
+						scheduleAdvance(room, 0);
+					}
+				}
+			}, 200);
+		}
+		function stopTick(){ if(tickTimer){ clearInterval(tickTimer); tickTimer=null; } }
+
+		let advanceLock = false;
+		function scheduleAdvance(room, delay){
+			if(advanceLock) return;
+			advanceLock = true;
+			setTimeout(async () => {
+				try {
+					const i = room.currentIndex;
+					if(i >= TOTAL_QUESTIONS-1){
+						await db.ref(`rooms/${room.code}`).update({ status:'finished' });
+					}else{
+						await db.ref(`rooms/${room.code}`).update({
+							currentIndex: i+1,
+							questionStartAt: Date.now()
+						});
+					}
+				} finally {
+					advanceLock = false;
+				}
+			}, delay);
+		}
+
+		// Host starts match
+		startBtn.addEventListener('click', async () => {
+			if(!isHost || !roomCode) return;
+			const ref = db.ref('rooms/'+roomCode);
+			const snap = await ref.get();
+			if(!snap.exists()) return;
+			const room = snap.val();
+			if(room.status !== 'lobby') return;
+			await ref.update({
+				status:'running',
+				currentIndex: 0,
+				questionStartAt: Date.now(),
+				answers: {}
+			});
+		});
+
+		// Submit answer
+		submitBtn.addEventListener('click', async () => {
+			if(!roomCode) return;
+			const v = answerInput.value.trim();
+			if(v==='') return;
+			answerInput.value='';
+			feedbackEl.textContent = 'Submitted.';
+			const ref = db.ref('rooms/'+roomCode);
+			const snap = await ref.get();
+			if(!snap.exists()) return;
+			const room = snap.val();
+			if(room.status!=='running') return;
+			const i = room.currentIndex;
+			const q = room.questions[i];
+			const correct = Number(v) === Number(q.a);
+
+			// Write answer (idempotent per player per question)
+			const ansRef = db.ref(`rooms/${roomCode}/answers/${i}/${playerId}`);
+			const ansSnap = await ansRef.get();
+			if(!ansSnap.exists()){
+				await ansRef.set({ v:Number(v), correct, at: Date.now() });
+				if(correct){
+					// Increment score
+					const myScore = (room.players[playerId]?.score||0) + 1;
+					await db.ref(`rooms/${roomCode}/players/${playerId}/score`).set(myScore);
+				}
+			} else {
+				feedbackEl.textContent = 'Already answered.';
+			}
+		});
+		answerInput.addEventListener('keydown', (e) => { if(e.key==='Enter') submitBtn.click(); });
+
+		// Results
+		function showResults(room){
+			resultBox.style.display='';
+			const me = room.players[playerId]||{score:0, name:myName};
+			const oppId = Object.keys(room.players||{}).find(id => id!==playerId);
+			const opp = oppId ? room.players[oppId] : {score:0, name:'Opponent'};
+			const correctTotal = Object.values(room.answers||{}).reduce((acc, m) => acc + Object.values(m||{}).filter(x => x.correct).length, 0);
+
+			finalSelf.textContent = me.score||0;
+			finalOpp.textContent = opp.score||0;
+			finalCorrect.textContent = correctTotal;
+
+			if((me.score||0) > (opp.score||0)){
+				resultTitle.textContent = 'You Win!';
+				resultTitle.style.color = 'var(--win)';
+				resultNote.textContent = `Great job — ${me.name} solved more.`;
+			}else if((me.score||0) < (opp.score||0)){
+				resultTitle.textContent = `${opp.name} Wins!`;
+				resultTitle.style.color = 'var(--win)';
+				resultNote.textContent = 'Tough match — try a rematch.';
+			}else{
+				resultTitle.textContent = 'Draw';
+				resultTitle.style.color = '#e8ecff';
+				resultNote.textContent = 'Neck and neck!';
+			}
+			timerEl.textContent='—';
+			qProgressEl.textContent='Finished';
+			difficultyBadge.textContent='';
+		}
+
+		// Play again (host regenerates)
+		playAgainBtn.addEventListener('click', async () => {
+			if(!roomCode) return;
+			const ref = db.ref('rooms/'+roomCode);
+			const snap = await ref.get();
+			if(!snap.exists()) return;
+			const room = snap.val();
+			if(isHost){
+				const questions = generateSet();
+				const resets = {};
+				Object.keys(room.players||{}).forEach(id => resets[id]={ name: room.players[id].name, score:0, joinedAt: room.players[id].joinedAt });
+				await ref.set({
+					code: room.code,
+					createdAt: room.createdAt,
+					hostId: room.hostId,
+					status: 'running',
+					currentIndex: 0,
+					perQuestionMs: PER_Q_MS,
+					questionStartAt: Date.now(),
+					questions,
+					players: resets,
+					answers: {}
+				});
+			}
+			resultBox.style.display='none';
+			answerInput.value=''; feedbackEl.textContent='';
+		});
+
+		// Leave room
+		leaveRoomBtn.addEventListener('click', async () => {
+			if(!roomCode) return;
+			try{
+				await db.ref(`rooms/${roomCode}/players/${playerId}`).remove();
+			}catch{}
+			if(unsub) unsub.off();
+			unsub = null;
+			roomCode = null; isHost = false;
+			roomView.style.display='none';
+			lobby.style.display='';
+			resultBox.style.display='none';
+			answerInput.value=''; feedbackEl.textContent='';
+			qProgressEl.textContent='Waiting'; difficultyBadge.textContent=''; timerEl.textContent='—';
+		});
+
+		// Fill identity name from inputs
+		hostNameInput.addEventListener('input', () => { selfNameEl.textContent = hostNameInput.value||'@you'; });
+		joinNameInput.addEventListener('input', () => { selfNameEl.textContent = joinNameInput.value||'@you'; });
+	</script>
+</body>
+</html>
